@@ -1,0 +1,111 @@
+
+// Developer: Forex Robot Easy Team
+// Developer's site: forexroboteasy.com
+// Program Name: MQLSquare Grid Scalper
+
+// Include necessary libraries and dependencies
+#include <Trade\Trade.mqh>
+#include <Array\ArrayObj.mqh>
+
+// Define global variables
+double LotSize = 0.01; // Initial lot size
+double Multiplier = 2; // Multiplier effect
+int MaxTrades = 5; // Maximum number of trades
+int Slippage = 3; // Slippage value in pips
+
+// Define trade management functions
+void OpenBuyOrder(double price) {
+    CTrade trade;
+    trade.Buy(LotSize, price, Slippage);
+}
+
+void OpenSellOrder(double price) {
+    CTrade trade;
+    trade.Sell(LotSize, price, Slippage);
+}
+
+void CloseBuyOrder(double price) {
+    CTrade trade;
+    trade.Sell(LotSize, price, Slippage);
+}
+
+void CloseSellOrder(double price) {
+    CTrade trade;
+    trade.Buy(LotSize, price, Slippage);
+}
+
+// Define market analysis function
+bool IsMarketTrendingUp() {
+    // Implement your market trend analysis algorithm here
+    // Return true if market is trending up, false otherwise
+}
+
+// Define profit calculation function
+double CalculateProfit(double entryPrice, double exitPrice, bool isBuyOrder) {
+    double profit = 0;
+    
+    if (isBuyOrder) {
+        profit = (exitPrice - entryPrice) * LotSize;
+    } else {
+        profit = (entryPrice - exitPrice) * LotSize;
+    }
+    
+    return profit;
+}
+
+// Define main trading function
+void Start() {
+    // Retrieve and analyze market data
+    double currentPrice = MarketInfo(_Symbol, MODE_BID);
+    bool isMarketTrendingUp = IsMarketTrendingUp();
+    
+    // Place initial trades
+    for (int i = 0; i < MaxTrades; i++) {
+        if (isMarketTrendingUp) {
+            OpenBuyOrder(currentPrice);
+        } else {
+            OpenSellOrder(currentPrice);
+        }
+        
+        currentPrice += Slippage;
+        LotSize *= Multiplier;
+    }
+    
+    // Monitor and manage trades
+    while (true) {
+        double newPrice = MarketInfo(_Symbol, MODE_BID);
+        
+        if (isMarketTrendingUp) {
+            CloseBuyOrder(newPrice);
+            OpenSellOrder(newPrice);
+        } else {
+            CloseSellOrder(newPrice);
+            OpenBuyOrder(newPrice);
+        }
+        
+        double profit = CalculateProfit(currentPrice, newPrice, isMarketTrendingUp);
+        Print('Profit: ', profit);
+        
+        currentPrice = newPrice;
+        isMarketTrendingUp = IsMarketTrendingUp();
+        
+        Sleep(5000); // Sleep for 5 seconds before next iteration
+    }
+}
+
+// Program entry point
+int OnInit() {
+    // Initialize necessary trading functions and settings here
+    return(INIT_SUCCEEDED);
+}
+
+// Program termination point
+void OnDeinit(const int reason) {
+    // Clean up and release resources here
+}
+
+// Program execution
+void OnTick() {
+    // Execute main trading function
+    Start();
+}
